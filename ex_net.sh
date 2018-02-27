@@ -34,6 +34,12 @@ update_link_ipv4_addr(){
 		RT* | CL* ) ip netns exec $1 ip addr add $3 dev "$1_$2" ;;
 	esac
 }
+update_link_ipv4_default_gateway(){
+	case $1 in
+		SW* ) echo "Cannot set gateway to L2SW!" ;;
+		RT* | CL* ) ip netns exec $1 ip route add default via $3 dev "$1_$2" ;;
+	esac
+}
 update_link_up(){
 	case $1 in
 		SW* ) ip link set "$1_$2" up ;;
@@ -93,51 +99,68 @@ up(){
 	IFS=$OLDIFS
 
 	# Assign IPs
-
 	## Segment 1
 	update_link_ipv4_addr RT1 SW1 192.168.1.254/24
 	update_link_up RT1 SW1
 
 	update_link_ipv4_addr CL1 SW1 192.168.1.1/24
+	update_link_ipv4_default_gateway CL1 SW1 192.168.12.254
 	update_link_up CL1 SW1
 
 	update_link_ipv4_addr CL2 SW1 192.168.1.2/24
+	update_link_ipv4_default_gateway CL2 SW1 192.168.12.254
 	update_link_up CL2 SW1
 
 	## Segment 12
-	update_link_ipv4_addr RT1 RT2 192.168.12.1/24
-	update_link_ipv4_addr RT2 RT1 192.168.12.2/24
+	update_link_ipv4_addr RT1 RT2 192.168.12.1/30
+	update_link_ipv4_addr RT2 RT1 192.168.12.2/30
 	update_link_up RT1 RT2
 
 	## Segment 2
-	update_link_ipv4_addr RT2 SW2 192.168.2.254/24
+	update_link_ipv4_addr RT2 SW2 192.168.2.6/29
 	update_link_up RT2 SW2
 
-	update_link_ipv4_addr CL3 SW2 192.168.2.1/24
+	update_link_ipv4_addr CL3 SW2 192.168.2.1/29
 	update_link_up CL3 SW2
 
-	update_link_ipv4_addr CL4 SW2 192.168.2.2/24
+	update_link_ipv4_addr CL4 SW2 192.168.2.2/29
 	update_link_up CL4 SW2
 
 	## Segment 23
-	update_link_ipv4_addr RT2 RT3 192.168.23.1/24
-	update_link_ipv4_addr RT3 RT2 192.168.23.2/24
+	update_link_ipv4_addr RT2 RT3 192.168.23.1/30
+	update_link_ipv4_addr RT3 RT2 192.168.23.2/30
 	update_link_up RT2 RT3
 
 	## Segment 3
-	update_link_ipv4_addr RT3 SW3 192.168.3.254/24
+	update_link_ipv4_addr RT3 SW3 192.168.3.6/29
 	update_link_up RT3 SW3
 
-	update_link_ipv4_addr CL5 SW3 192.168.3.1/24
+	update_link_ipv4_addr CL5 SW3 192.168.3.1/29
 	update_link_up CL5 SW3 
 
-	update_link_ipv4_addr CL6 SW3 192.168.3.2/24
+	update_link_ipv4_addr CL6 SW3 192.168.3.2/29
 	update_link_up CL6 SW3
 
 	# Up Switches
 	update_switch_up SW1
 	update_switch_up SW2
 	update_switch_up SW3
+
+	# Set Default Gateway
+	update_link_ipv4_default_gateway CL1 SW1 192.168.1.254
+	update_link_ipv4_default_gateway CL2 SW1 192.168.1.254
+
+	update_link_ipv4_default_gateway RT1 RT2 192.168.12.2
+	update_link_ipv4_default_gateway RT2 RT1 192.168.12.1
+
+	update_link_ipv4_default_gateway CL3 SW2 192.168.2.6
+	update_link_ipv4_default_gateway CL4 SW2 192.168.2.6
+
+	update_link_ipv4_default_gateway RT2 RT3 192.168.23.2
+	update_link_ipv4_default_gateway RT3 RT2 192.168.23.1
+
+	update_link_ipv4_default_gateway CL5 SW3 192.168.3.6
+	update_link_ipv4_default_gateway CL6 SW3 192.168.3.6
 }
 
 down(){
